@@ -1,20 +1,18 @@
 class Recipe {
-  late String      _imageName;
-  late DishName    _dishName;
-  late Ingredients _ingredients;
-  late Procedure   _procedure;
+  late Category    category;
+  late String      imageName;
+  late DishName    dishName;
+  late Ingredients ingredients;
+  late Procedure   procedure;
+}
 
-  set setImageName(String name) => _imageName = name;
-  String get imageName => _imageName;
-
-  set setTitle(DishName title) => _dishName = title;
-  DishName get title => _dishName;
-
-  set setIngredients(Ingredients ingredients) => _ingredients = ingredients;
-  Ingredients get ingredients => _ingredients;
-    
-  set setProcdure(Procedure procedure) => _procedure = procedure;
-  Procedure get procedure => _procedure;
+// 種別
+enum Category{
+  meatDish('肉料理'),
+  fishDish('魚料理'),
+  ;
+  const Category(this.displayName);
+  final String displayName;
 }
 
 // タイトル
