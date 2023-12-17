@@ -1,8 +1,11 @@
 class Recipe {
-  // late dynamic  _image;
+  late String      _imageName;
   late DishName    _dishName;
   late Ingredients _ingredients;
   late Procedure   _procedure;
+
+  set setImageName(String name) => _imageName = name;
+  String get imageName => _imageName;
 
   set setTitle(DishName title) => _dishName = title;
   DishName get title => _dishName;
