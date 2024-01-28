@@ -1,52 +1,28 @@
 class Recipe {
-  late Category    category;
-  late String      imageName;
-  late DishName    dishName;
-  late Ingredients ingredients;
-  late Procedure   procedure;
-}
+  String imageName;
+  String title;
+  String tags;
+  String ingredients;
+  String procedure;
 
-// 種別
-enum Category{
-  meatDish('肉料理'),
-  fishDish('魚料理'),
-  ;
-  const Category(this.displayName);
-  final String displayName;
-}
+  Recipe(
+      this.imageName, this.title, this.tags, this.ingredients, this.procedure);
 
-// タイトル
-class DishName {
-  static const int min = 1;
-  static const int max = 20;
-
-  String value;
-
-  factory DishName(String str) {
-    if(str.length < min) {
-      throw DishNameException("タイトルは1文字以上必要です");
-    }
-    if(str.length > max) {
-      throw DishNameException("タイトルは20文字以下にしてください");
-    }
-    return DishName._internal(str);
+  Map<String, String> toMap() {
+    return {
+      'imageName': imageName,
+      'title': title,
+      'ingredients': ingredients,
+      'procedure': procedure,
+    }..addAll(separateTags());
   }
-  DishName._internal(this.value);
-}
 
-class DishNameException implements Exception {
-  String message;
-  DishNameException(this.message);
-}
-
-// 食材
-class Ingredients {
-  String value;
-  Ingredients(this.value);
-}
-
-// 手順
-class Procedure {
-  String value;
-  Procedure(this.value);
+  Map<String, String> separateTags() {
+    var tagList = tags.split(' ');
+    var tagMap = <String, String>{};
+    for (var i = 0; i < tagList.length; i++) {
+      tagMap['tag${i + 1}'] = tagList[i];
+    }
+    return tagMap;
+  }
 }

@@ -1,27 +1,23 @@
 // Flutter
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 // Firebase
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 // Recipeデータのやり取り
 class FirestoreService {
   final db = FirebaseFirestore.instance;
   final root = "recipes";
 
-  // UserIDの取得
-  final userID = FirebaseAuth.instance.currentUser?.uid ?? 'test';
-
   // 追加
   void add(String docName, Map<String, dynamic> data) {
     try {
       Map<String, dynamic> fData = data;
-      fData["author"] = userID;
       db.collection(root).doc(docName).set(fData);
     } catch (e) {
-      print('Error : $e');
+      throw Exception();
     }
   }
 
@@ -35,45 +31,45 @@ class FirestoreService {
   }
 
   // 全件取得
-  Future<dynamic> getAll() async {
+  Stream<QuerySnapshot> getAll() {
+    return db.collection(root).snapshots();
+  }
+
+  Stream<QuerySnapshot> search(String word) {
+    return db
+        .collection(root)
+        .where(Filter.or(Filter("tag1", isEqualTo: word),
+            Filter("tag2", isEqualTo: word), Filter("tag3", isEqualTo: word)))
+        .snapshots();
+  }
+
+  // お気に入り追加
+  void addFavorite(String docName) {
     try {
-      final QuerySnapshot querySnapshot = await db.collection(root).get();
-      final dataes = querySnapshot.docs;
-      return dataes;
-    } catch (error) {
-      print("Error: $error");
-      return null;
+      db.collection(root).doc(docName).update({"favorite": true});
+    } catch (e) {
+      print('Error : $e');
     }
   }
 
-  // カテゴリ別全件取得
-  Future<dynamic> getAllByCategory(String category) async {
+  // お気に入り削除
+  void deleteFavorite(String docName) {
     try {
-      final QuerySnapshot querySnapshot = await db.collection(root).where('category', isEqualTo: category).get();
-      final dataes = querySnapshot.docs;
-      return dataes;
-    } catch (error) {
-      print("Error: $error");
-      return null;
+      db.collection(root).doc(docName).update({"favorite": false});
+    } catch (e) {
+      print('Error : $e');
     }
   }
 
-  // 一件取得
-  Future<Map<String, dynamic>?> getOne(String docName) async {
-    try {
-      final DocumentSnapshot doc = await db.collection(root).doc(docName).get();
-      final data = doc.data() as Map<String, dynamic>;
-      return data;
-    } catch (error) {
-      print("Error: $error");
-      return null;
-    }
+  // お気に入り取得
+  Stream<QuerySnapshot> getFavorite() {
+    return db.collection(root).where("favorite", isEqualTo: true).snapshots();
   }
 
-  // 削除（ログインユーザのみ可能）
-  void delete(String docName) async {
+  // 削除
+  Future<void> delete(String docName) async {
     try {
-      db.collection(root).doc(docName).delete();
+      await db.collection(root).doc(docName).delete();
     } catch (e) {
       print('Error : $e');
     }
@@ -82,26 +78,24 @@ class FirestoreService {
 
 // 画像ファイルのやり取り
 class CloudStorageService {
-  // UserIDの取得
-  final userID = FirebaseAuth.instance.currentUser?.uid ?? '';
+  final root = "images";
 
-  // アップロード（ログインユーザのみ可能）
-  void uploadImage(String path, String name) async {
+  // アップロード
+  void uploadImage(File file, String imageName) async {
     try {
-      File file = File(path);
       final storageRef =
-          FirebaseStorage.instance.ref().child('$userID/$name');
-      final task = await storageRef.putFile(file);
+          FirebaseStorage.instance.ref().child("$root/$imageName");
+      await storageRef.putFile(file);
     } catch (e) {
-      print(e);
+      throw Exception();
     }
   }
 
-  // ダウンロード（全ユーザ可能）
-  Future<Uint8List?> downloadImage(String path) async {
+  // ダウンロード
+  Future<Uint8List?> downloadImage(String imageName) async {
     try {
       final storageRef =
-          FirebaseStorage.instance.ref().child(path);
+          FirebaseStorage.instance.ref().child("$root/$imageName");
       const oneMegabyte = 1024 * 1024;
       return await storageRef.getData(oneMegabyte);
     } catch (e) {
@@ -110,10 +104,27 @@ class CloudStorageService {
     return null;
   }
 
-  // 削除（ログインユーザのみ可能）
-  void deleteImage(String name) async {
-    final storageRef =
-        FirebaseStorage.instance.ref().child('$userID/$name');
+  Future<String> getImageURL(String imageName) async {
+    try {
+      // 画像のダウンロードURLを取得
+      String downloadURL = await FirebaseStorage.instance
+          .ref()
+          .child("$root/$imageName")
+          .getDownloadURL();
+      return downloadURL;
+    } catch (e) {
+      print('画像の取得中にエラーが発生しました: $e');
+      return "";
+    }
+  }
+
+  // 削除
+  void deleteImage(String imageName) async {
+    try {
+      final storageRef = FirebaseStorage.instance.ref().child("$root/$imageName");
     await storageRef.delete();
+    } catch (e) {
+      print('画像の削除に失敗しました。: $e');
+    }
   }
 }
